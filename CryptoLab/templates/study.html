@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-graduation-cap"></i> Interactive Study Mode</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Visual flowcharts and simulations of how cryptographic algorithms work under the hood.
+    </p>
+</div>
+
+<div style="margin-top: 2rem;">
+    <!-- Caesar Cipher Flowchart -->
+    <div class="glass-panel" style="margin-bottom: 2rem; border-left: 4px solid var(--primary);">
+        <h3>1. Caesar Cipher (Shift Substitution)</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            The simplest classical cipher. It replaces each letter with another letter a fixed number of positions down the alphabet.
+        </p>
+        <div class="flowchart-container">
+            <div class="flow-step">
+                <div class="box">Plaintext: 'A'</div>
+                <div class="sub-text">Index 0</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">Add Key (Shift 3)</div>
+                <div class="sub-text">0 + 3 = 3</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step">
+                <div class="box">Modulo 26</div>
+                <div class="sub-text">3 mod 26 = 3</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step result-step">
+                <div class="box">Ciphertext: 'D'</div>
+                <div class="sub-text">Index 3</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AES Flowchart -->
+    <div class="glass-panel" style="margin-bottom: 2rem; border-left: 4px solid var(--secondary);">
+        <h3>2. Advanced Encryption Standard (AES)</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            A modern symmetric block cipher. It processes data in 128-bit blocks (represented as a 4x4 matrix of bytes) through multiple rounds of substitution and permutation.
+        </p>
+        <div class="flowchart-container">
+            <div class="flow-step">
+                <div class="box">16-Byte Block</div>
+                <div class="sub-text">Plaintext</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">SubBytes</div>
+                <div class="sub-text">Non-linear Substitution</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">ShiftRows & MixColumns</div>
+                <div class="sub-text">Diffusion (Scrambling)</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">AddRoundKey</div>
+                <div class="sub-text">XOR with derived key</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step result-step">
+                <div class="box">Ciphertext</div>
+                <div class="sub-text">Encrypted Block</div>
+            </div>
+        </div>
+        <p style="font-size: 0.8rem; text-align: center; margin-top: 1rem; color: var(--text-muted);">
+            *This process repeats for 10, 12, or 14 rounds depending on the key size (128, 192, or 256 bits).
+        </p>
+    </div>
+
+    <!-- RSA Flowchart -->
+    <div class="glass-panel" style="margin-bottom: 2rem; border-left: 4px solid var(--error);">
+        <h3>3. RSA Asymmetric Encryption</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Uses a mathematically linked pair of keys. Data encrypted with the Public Key can only be decrypted by the Private Key.
+        </p>
+        <div class="flowchart-container">
+            <div class="flow-step">
+                <div class="box">Message (m)</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">Encrypt with Public Key (e, n)</div>
+                <div class="sub-text">c = m<sup>e</sup> mod n</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step result-step">
+                <div class="box">Ciphertext (c)</div>
+                <div class="sub-text">Sent over network</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step" style="border-color: var(--error);">
+                <div class="box">Decrypt with Private Key (d, n)</div>
+                <div class="sub-text">m = c<sup>d</sup> mod n</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step">
+                <div class="box">Message (m)</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hashing Flowchart -->
+    <div class="glass-panel" style="margin-bottom: 2rem; border-left: 4px solid var(--accent);">
+        <h3>4. Cryptographic Hashing (e.g., SHA-256)</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            A one-way mathematical function that takes any amount of data and produces a fixed-size, unique fingerprint.
+        </p>
+        <div class="flowchart-container">
+            <div class="flow-step">
+                <div class="box">Any Input Data</div>
+                <div class="sub-text">File, Password, Text...</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step highlight-step">
+                <div class="box">Hash Function (SHA-256)</div>
+                <div class="sub-text">Irreversible Math</div>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-step result-step">
+                <div class="box">256-bit Fixed Hash</div>
+                <div class="sub-text">e.g., a591a6d...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Completion Section -->
+    <div style="margin-top: 3rem; text-align: center; padding: 2rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px dashed var(--primary);">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div style="margin-bottom: 1rem; color: var(--error); font-weight: bold; background: rgba(239, 68, 68, 0.1); padding: 0.5rem; border-radius: 4px;">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <h3 style="color: var(--primary); margin-bottom: 1rem;">Ready to Apply Your Knowledge?</h3>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">By clicking the button below, you confirm that you understand the mathematical foundations of these algorithms and are ready to access the Cryptography Labs.</p>
+        <form action="{{ url_for('complete_study') }}" method="POST">
+            <button type="submit" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 3rem;"><i class="fas fa-unlock"></i> Mark as Complete & Unlock Labs</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .flowchart-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+    .flow-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .flow-step .box {
+        padding: 1rem 1.5rem;
+        background: var(--bg-dark);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    .flow-step .sub-text {
+        margin-top: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+    }
+    .flow-arrow {
+        color: var(--text-muted);
+        font-size: 1.5rem;
+    }
+    .highlight-step .box {
+        border-color: var(--primary);
+        background: rgba(59, 130, 246, 0.1);
+    }
+    .result-step .box {
+        border-color: var(--secondary);
+        background: rgba(16, 185, 129, 0.1);
+        color: #6ee7b7;
+    }
+    
+    @media (max-width: 768px) {
+        .flowchart-container {
+            flex-direction: column;
+        }
+        .flow-arrow {
+            transform: rotate(90deg);
+            margin: 0.5rem 0;
+        }
+    }
+</style>
+{% endblock %}

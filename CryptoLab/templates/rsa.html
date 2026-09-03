@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="cipher-container">
+    <div class="header">
+        <h2>Asymmetric Cryptography (RSA)</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem;">
+            Simulate a Public Key Infrastructure (PKI) exchange between Alice and Bob.
+        </p>
+    </div>
+
+    <div class="cipher-workspace">
+        
+        <!-- ALICE CONSOLE -->
+        <div class="input-section glass-panel" style="border-top: 4px solid var(--accent);">
+            <h3><i class="fas fa-user-circle"></i> Alice's Console</h3>
+            
+            <div class="form-group" style="margin-top: 1rem;">
+                <button class="btn btn-primary btn-sm" onclick="generateRSA('alice')"><i class="fas fa-key"></i> Generate Keypair</button>
+            </div>
+
+            <div class="form-group">
+                <label>Alice's Public Key (Share this!)</label>
+                <textarea id="alice-public" rows="3" readonly style="font-size: 0.75rem;"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Alice's Private Key (Keep Secret!)</label>
+                <textarea id="alice-private" rows="3" readonly style="font-size: 0.75rem; border-color: var(--error);"></textarea>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+            <div class="form-group">
+                <label>Incoming Encrypted Message (from Bob)</label>
+                <textarea id="alice-incoming" rows="2" placeholder="Paste Bob's ciphertext here..."></textarea>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="decryptRSA('alice')"><i class="fas fa-unlock"></i> Decrypt with Private Key</button>
+            
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Decrypted Plaintext</label>
+                <textarea id="alice-decrypted" rows="2" readonly></textarea>
+            </div>
+        </div>
+
+        <!-- BOB CONSOLE -->
+        <div class="output-section glass-panel" style="border-top: 4px solid var(--secondary);">
+            <h3><i class="fas fa-user-circle"></i> Bob's Console</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Bob wants to send a secret message to Alice.</p>
+            
+            <div class="form-group">
+                <label>Alice's Public Key (Paste here)</label>
+                <textarea id="bob-alice-public" rows="3" placeholder="Paste Alice's Public Key here..." style="font-size: 0.75rem;"></textarea>
+                <button class="btn btn-secondary btn-sm" onclick="copyKey('alice-public', 'bob-alice-public')" style="margin-top: 0.5rem;"><i class="fas fa-arrow-right"></i> Copy from Alice</button>
+            </div>
+
+            <div class="form-group">
+                <label>Message for Alice</label>
+                <textarea id="bob-message" rows="2" placeholder="Enter secret message..."></textarea>
+            </div>
+            
+            <button class="btn btn-primary" onclick="encryptRSA('bob')"><i class="fas fa-lock"></i> Encrypt with Alice's Public Key</button>
+            
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Encrypted Ciphertext (Send this to Alice)</label>
+                <textarea id="bob-ciphertext" rows="3" readonly style="font-size: 0.75rem;"></textarea>
+                <button class="btn btn-secondary btn-sm" onclick="copyKey('bob-ciphertext', 'alice-incoming')" style="margin-top: 0.5rem;"><i class="fas fa-arrow-left"></i> Send to Alice</button>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    async function generateRSA(person) {
+        try {
+            const res = await fetch('/api/asymmetric/rsa/keygen');
+            const data = await res.json();
+            document.getElementById(`${person}-public`).value = data.public_key;
+            document.getElementById(`${person}-private`).value = data.private_key;
+        } catch (e) {
+            alert('Failed to generate keypair');
+        }
+    }
+
+    function copyKey(src, dest) {
+        document.getElementById(dest).value = document.getElementById(src).value;
+    }
+
+    async function encryptRSA(person) {
+        const text = document.getElementById('bob-message').value;
+        const key = document.getElementById('bob-alice-public').value;
+        
+        try {
+            const response = await fetch('/api/asymmetric/rsa/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'encrypt', text, key })
+            });
+            const data = await response.json();
+            if(data.error) alert(data.error);
+            else document.getElementById('bob-ciphertext').value = data.result;
+        } catch (e) {
+            alert('Failed to encrypt');
+        }
+    }
+
+    async function decryptRSA(person) {
+        const text = document.getElementById('alice-incoming').value;
+        const key = document.getElementById('alice-private').value;
+        
+        try {
+            const response = await fetch('/api/asymmetric/rsa/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'decrypt', text, key })
+            });
+            const data = await response.json();
+            if(data.error) alert(data.error);
+            else document.getElementById('alice-decrypted').value = data.result;
+        } catch (e) {
+            alert('Failed to decrypt');
+        }
+    }
+</script>
+{% endblock %}

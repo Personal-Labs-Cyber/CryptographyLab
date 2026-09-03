@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="cipher-container">
+    <div class="header">
+        <h2>Advanced Encryption Standard (AES)</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem;">
+            Explore modern symmetric encryption and see why ECB mode is vulnerable to pattern leakage.
+        </p>
+    </div>
+
+    <div class="cipher-workspace">
+        <!-- INPUT SECTION -->
+        <div class="input-section glass-panel">
+            <h3>Input Configuration</h3>
+            
+            <div class="form-group">
+                <label for="mode-select">Block Cipher Mode</label>
+                <select id="mode-select" class="custom-select" onchange="toggleIV()">
+                    <option value="ECB">ECB (Electronic Codebook) - Insecure</option>
+                    <option value="CBC" selected>CBC (Cipher Block Chaining) - Secure</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="text-input">Plaintext</label>
+                <textarea id="text-input" rows="3" placeholder="Enter text to encrypt... Try repeating letters like 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' to see ECB pattern leakage!"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>256-bit Key (Hex)</label>
+                <div class="input-group">
+                    <input type="text" id="key-input" placeholder="64 hex characters...">
+                    <button class="btn btn-secondary btn-sm" onclick="generateKeyAndIV()">Generate</button>
+                </div>
+            </div>
+
+            <div class="form-group" id="iv-group">
+                <label>Initialization Vector - IV (Hex)</label>
+                <input type="text" id="iv-input" placeholder="32 hex characters...">
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="processAES('encrypt')"><i class="fas fa-lock"></i> Encrypt</button>
+                <button class="btn btn-secondary" onclick="processAES('decrypt')"><i class="fas fa-unlock"></i> Decrypt</button>
+            </div>
+            
+            <div id="error-message" class="error-msg" style="display: none; margin-top: 1rem;"></div>
+        </div>
+
+        <!-- OUTPUT SECTION -->
+        <div class="output-section glass-panel">
+            <h3>Output Visualization</h3>
+            
+            <div class="form-group">
+                <label>Raw Output</label>
+                <textarea id="text-output" rows="3" readonly placeholder="Result will appear here..."></textarea>
+            </div>
+
+            <div id="visualization-area" style="display: none;">
+                <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--text-muted);">Block Breakdown (16 bytes / 32 hex chars)</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Notice how in ECB mode, identical plaintext blocks result in identical ciphertext blocks.
+                </p>
+                <div class="block-grid" id="block-container">
+                    <!-- Blocks will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleIV() {
+        const mode = document.getElementById('mode-select').value;
+        document.getElementById('iv-group').style.display = (mode === 'ECB') ? 'none' : 'block';
+    }
+
+    async function generateKeyAndIV() {
+        try {
+            const res = await fetch('/api/symmetric/aes/keygen');
+            const data = await res.json();
+            document.getElementById('key-input').value = data.key;
+            document.getElementById('iv-input').value = data.iv;
+        } catch (e) {
+            alert('Failed to generate key');
+        }
+    }
+
+    // Color palette for visualizing blocks
+    const colors = [
+        'rgba(239, 68, 68, 0.2)', 'rgba(59, 130, 246, 0.2)', 
+        'rgba(16, 185, 129, 0.2)', 'rgba(245, 158, 11, 0.2)',
+        'rgba(139, 92, 246, 0.2)', 'rgba(236, 72, 153, 0.2)'
+    ];
+    const blockColorMap = new Map();
+    let colorIndex = 0;
+
+    function getBlockColor(hex) {
+        if (!blockColorMap.has(hex)) {
+            blockColorMap.set(hex, colors[colorIndex % colors.length]);
+            colorIndex++;
+        }
+        return blockColorMap.get(hex);
+    }
+
+    async function processAES(action) {
+        const text = document.getElementById('text-input').value;
+        const key = document.getElementById('key-input').value;
+        const iv = document.getElementById('iv-input').value;
+        const mode = document.getElementById('mode-select').value;
+        
+        const outputEl = document.getElementById('text-output');
+        const errorEl = document.getElementById('error-message');
+        const vizArea = document.getElementById('visualization-area');
+        const blockContainer = document.getElementById('block-container');
+        
+        outputEl.value = '';
+        errorEl.style.display = 'none';
+        vizArea.style.display = 'none';
+        blockContainer.innerHTML = '';
+        blockColorMap.clear();
+        colorIndex = 0;
+        
+        try {
+            const response = await fetch('/api/symmetric/aes/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, text, key, iv, mode })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                errorEl.textContent = data.error || 'An error occurred';
+                errorEl.style.display = 'block';
+            } else {
+                if (action === 'encrypt') {
+                    outputEl.value = data.ciphertext;
+                    
+                    // Render blocks
+                    data.blocks.forEach((block, idx) => {
+                        const ptBlock = data.plaintext_blocks[idx];
+                        const blockEl = document.createElement('div');
+                        blockEl.className = 'aes-block';
+                        blockEl.style.backgroundColor = getBlockColor(block);
+                        
+                        blockEl.innerHTML = `
+                            <div class="block-num">Block ${idx + 1}</div>
+                            <div class="block-data">PT: ${ptBlock}</div>
+                            <div class="block-data">CT: ${block}</div>
+                        `;
+                        blockContainer.appendChild(blockEl);
+                    });
+                    vizArea.style.display = 'block';
+                } else {
+                    outputEl.value = data.plaintext;
+                }
+            }
+        } catch (err) {
+            errorEl.textContent = 'Failed to connect to the server.';
+            errorEl.style.display = 'block';
+        }
+    }
+
+    // Initialize
+    toggleIV();
+</script>
+{% endblock %}

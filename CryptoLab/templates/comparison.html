@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-chart-bar"></i> Algorithm Comparison</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Understand the differences between cryptographic algorithms and their security statuses.
+    </p>
+</div>
+
+<div class="glass-panel" style="margin-top: 2rem;">
+    <div style="overflow-x: auto;">
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Type</th>
+                    <th>Key Size</th>
+                    <th>Speed</th>
+                    <th>Security</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Caesar</strong></td>
+                    <td>Classical</td>
+                    <td>Small (1-25)</td>
+                    <td>Very Fast</td>
+                    <td><span class="status-badge status-danger">❌ Weak</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Vigenère</strong></td>
+                    <td>Classical</td>
+                    <td>Variable</td>
+                    <td>Fast</td>
+                    <td><span class="status-badge status-danger">❌ Weak</span></td>
+                </tr>
+                <tr>
+                    <td><strong>AES-GCM</strong></td>
+                    <td>Modern Symmetric</td>
+                    <td>128 / 192 / 256-bit</td>
+                    <td>Fast</td>
+                    <td><span class="status-badge status-success">✅ Strong (Recommended)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>RSA</strong></td>
+                    <td>Modern Asymmetric</td>
+                    <td>2048+ bit</td>
+                    <td>Slow</td>
+                    <td><span class="status-badge status-success">✅ Strong</span></td>
+                </tr>
+                <tr>
+                    <td><strong>MD5</strong></td>
+                    <td>Cryptographic Hash</td>
+                    <td>N/A</td>
+                    <td>Very Fast</td>
+                    <td><span class="status-badge status-danger">❌ Broken</span></td>
+                </tr>
+                <tr>
+                    <td><strong>SHA-256</strong></td>
+                    <td>Cryptographic Hash</td>
+                    <td>N/A</td>
+                    <td>Fast</td>
+                    <td><span class="status-badge status-warning">🟡 Good (Not for Passwords)</span></td>
+                </tr>
+                <tr>
+                    <td><strong>bcrypt / PBKDF2</strong></td>
+                    <td>Password Hash (KDF)</td>
+                    <td>N/A</td>
+                    <td>Intentionally Slow</td>
+                    <td><span class="status-badge status-success">✅ Strong (For Passwords)</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    .comparison-table th, .comparison-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+    .comparison-table th {
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+    }
+    .comparison-table tr:last-child td {
+        border-bottom: none;
+    }
+    .comparison-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    .status-danger {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+    .status-warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fcd34d;
+    }
+    .status-success {
+        background: rgba(16, 185, 129, 0.2);
+        color: #6ee7b7;
+    }
+</style>
+{% endblock %}

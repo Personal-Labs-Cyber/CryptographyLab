@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="cipher-container">
+    <div class="header">
+        <h2>Hashing & Password Security</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem;">
+            Compare fast cryptographic hashes (SHA-256) vs slow password hashes (PBKDF2, bcrypt) to understand "Work Factor".
+        </p>
+    </div>
+
+    <div class="glass-panel" style="margin-bottom: 2rem;">
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label>Password to Hash</label>
+                <input type="text" id="password-input" placeholder="hunter2">
+            </div>
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label>Salt (Hex - for PBKDF2 only)</label>
+                <input type="text" id="salt-input" placeholder="Leave empty for default">
+            </div>
+            <button class="btn btn-primary" onclick="processHashes()"><i class="fas fa-bolt"></i> Hash Password</button>
+        </div>
+    </div>
+
+    <div class="cipher-workspace">
+        
+        <!-- SHA-256 -->
+        <div class="glass-panel" style="border-left: 4px solid var(--error);">
+            <h3>SHA-256 (Fast Cryptographic Hash)</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Great for checking file integrity. Terrible for passwords because attackers can guess billions per second.
+            </p>
+            <div class="form-group">
+                <label>Result</label>
+                <textarea id="sha256-output" rows="2" readonly style="font-size: 0.8rem;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Computation Time</label>
+                <div style="font-family: 'JetBrains Mono'; color: var(--error); font-weight: bold;" id="sha256-time">-- ms</div>
+            </div>
+        </div>
+
+        <!-- PBKDF2 -->
+        <div class="glass-panel" style="border-left: 4px solid var(--accent);">
+            <h3>PBKDF2-HMAC-SHA256</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Standard password derivation. We are running 100,000 iterations to purposefully slow it down.
+            </p>
+            <div class="form-group">
+                <label>Result</label>
+                <textarea id="pbkdf2-output" rows="2" readonly style="font-size: 0.8rem;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Computation Time</label>
+                <div style="font-family: 'JetBrains Mono'; color: var(--accent); font-weight: bold;" id="pbkdf2-time">-- ms</div>
+            </div>
+        </div>
+
+        <!-- bcrypt -->
+        <div class="glass-panel" style="border-left: 4px solid var(--secondary); grid-column: 1 / -1;">
+            <h3>bcrypt</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Industry standard. Notice the generated string contains the algorithm ($2b$), cost factor ($12$), salt, and the hash. It generates its own secure salt automatically!
+            </p>
+            <div class="form-group">
+                <label>Result</label>
+                <textarea id="bcrypt-output" rows="2" readonly style="font-size: 0.8rem;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Computation Time</label>
+                <div style="font-family: 'JetBrains Mono'; color: var(--secondary); font-weight: bold;" id="bcrypt-time">-- ms</div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+    async function processHashes() {
+        const password = document.getElementById('password-input').value;
+        const salt = document.getElementById('salt-input').value;
+        
+        if(!password) {
+            alert('Enter a password!');
+            return;
+        }
+
+        // Show loading state
+        document.getElementById('sha256-output').value = 'Hashing...';
+        document.getElementById('pbkdf2-output').value = 'Hashing (takes a moment)...';
+        document.getElementById('bcrypt-output').value = 'Hashing (takes a moment)...';
+        
+        try {
+            const response = await fetch('/api/hashing/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password, salt })
+            });
+            const data = await response.json();
+            
+            if(data.error) {
+                alert(data.error);
+                return;
+            }
+            
+            document.getElementById('sha256-output').value = data.sha256.hash;
+            document.getElementById('sha256-time').innerText = data.sha256.time + ' ms';
+            
+            document.getElementById('pbkdf2-output').value = data.pbkdf2.hash;
+            document.getElementById('pbkdf2-time').innerText = data.pbkdf2.time + ' ms';
+            
+            document.getElementById('bcrypt-output').value = data.bcrypt.hash;
+            document.getElementById('bcrypt-time').innerText = data.bcrypt.time + ' ms';
+            
+        } catch (e) {
+            alert('Failed to process hashes');
+        }
+    }
+</script>
+{% endblock %}

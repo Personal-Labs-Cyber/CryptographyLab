@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoLab</title>
+    <!-- Use Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 style="color: var(--primary); font-size: 1.5rem;">Crypto<span style="color: var(--text-light);">Lab</span></h1>
+            </div>
+            
+            <!-- User Profile Area -->
+            <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--secondary); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                        {{ session.get('username', 'U')[0]|upper }}
+                    </div>
+                    <div>
+                        <div style="font-size: 0.85rem; font-weight: bold;">{{ session.get('username', 'User') }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">
+                            {% if session.get('study_completed') %}
+                                <span style="color: #10b981;">Labs Unlocked</span>
+                            {% else %}
+                                <span style="color: var(--error);">Labs Locked</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" style="color: var(--text-muted); font-size: 0.8rem;" title="Logout"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>Dashboard</h3>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Home</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Modules</h3>
+                    <ul>
+                        <li><a href="{{ url_for('study_view') }}" style="color: var(--accent);"><i class="fas fa-graduation-cap"></i> Study Mode</a></li>
+                        <li><a href="{{ url_for('encryption_view') }}"><i class="fas fa-lock"></i> Encryption</a>
+                            <ul class="sub-menu">
+                                <li><a href="{{ url_for('encryption_view') }}?algo=caesar"><i class="fas fa-angle-right"></i> Caesar</a></li>
+                                <li><a href="{{ url_for('encryption_view') }}?algo=vigenere"><i class="fas fa-angle-right"></i> Vigenère</a></li>
+                                <li><a href="{{ url_for('encryption_view') }}?algo=aes"><i class="fas fa-angle-right"></i> AES</a></li>
+                                <li><a href="{{ url_for('encryption_view') }}?algo=rsa"><i class="fas fa-angle-right"></i> RSA</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="{{ url_for('hashing_view') }}"><i class="fas fa-hashtag"></i> Hashing</a></li>
+                        <li><a href="{{ url_for('attacks_view') }}"><i class="fas fa-bomb"></i> Attack Lab</a></li>
+                        <li><a href="{{ url_for('comparison_view') }}"><i class="fas fa-chart-bar"></i> Comparison</a></li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Advanced Topics</h3>
+                    <ul>
+                        <li><a href="{{ url_for('adv_symmetric_view') }}"><i class="fas fa-layer-group"></i> Adv. Symmetric</a>
+                            <ul class="sub-menu">
+                                <li><a href="{{ url_for('adv_symmetric_view') }}#ecb-lab"><i class="fas fa-angle-right"></i> ECB Visualizer</a></li>
+                                <li><a href="{{ url_for('adv_symmetric_view') }}#modern-playground"><i class="fas fa-angle-right"></i> ChaCha20 & GCM</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="{{ url_for('adv_asymmetric_view') }}"><i class="fas fa-project-diagram"></i> Adv. Asymmetric</a>
+                            <ul class="sub-menu">
+                                <li><a href="{{ url_for('adv_asymmetric_view') }}#dh-lab"><i class="fas fa-angle-right"></i> Diffie-Hellman</a></li>
+                                <li><a href="{{ url_for('adv_asymmetric_view') }}#sig-lab"><i class="fas fa-angle-right"></i> Digital Signatures</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="{{ url_for('pki_view') }}"><i class="fas fa-certificate"></i> PKI & Certificates</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

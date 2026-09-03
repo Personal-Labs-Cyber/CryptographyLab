@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-bomb"></i> Attack Lab</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Understand cryptanalysis by breaking weak ciphers.
+    </p>
+</div>
+
+<div class="encryption-layout">
+    
+    <!-- LEFT PANEL: Workspace -->
+    <div class="workspace-panel glass-panel" style="border-top: 4px solid var(--error);">
+        <h3>Caesar Cipher Brute Force</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Because the Caesar cipher only has 25 possible keys, an attacker can simply try them all until they find English text.
+        </p>
+
+        <div class="form-group">
+            <label for="input-text">Encrypted Text (Ciphertext)</label>
+            <textarea id="input-text" rows="2" placeholder="e.g. Khoor Zruog (Hello World shifted by 3)"></textarea>
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; background: var(--error);" onclick="runBruteForce()">
+            <i class="fas fa-unlock"></i> Run Brute Force
+        </button>
+
+        <div id="results-area" style="margin-top: 2rem; display: none;">
+            <h4>Possible Plaintexts</h4>
+            <div id="results-list" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 0.5rem; padding: 1rem; border: 1px solid var(--border);">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Explanation -->
+    <div class="info-panel glass-panel">
+        <h3 style="color: var(--error);"><i class="fas fa-shield-alt"></i> Security Lesson</h3>
+        
+        <p style="margin-top: 1rem; font-size: 0.95rem;">
+            <strong>Why is Caesar vulnerable?</strong>
+        </p>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+            The <em>Keyspace</em> (total number of possible keys) is incredibly small. There are only 26 letters in the alphabet, meaning there are only 25 possible shift combinations.
+        </p>
+        
+        <p style="margin-top: 1rem; font-size: 0.95rem;">
+            <strong>How the attack works:</strong>
+        </p>
+        <ol style="margin-left: 1.2rem; color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+            <li style="margin-bottom: 0.5rem;">The computer decrypts the message using Shift 1, 2, 3... up to 25.</li>
+            <li style="margin-bottom: 0.5rem;">It checks the resulting output against a dictionary of common English words (like "the", "and", "hello").</li>
+            <li>The output with the highest "English score" is flagged as the likely plaintext!</li>
+        </ol>
+
+        <div style="margin-top: 2rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--error); border-radius: 4px;">
+            <strong style="color: var(--error);">Modern Cryptography Rule:</strong>
+            <p style="font-size: 0.8rem; margin-top: 0.5rem;">
+                A secure algorithm must have a Keyspace so large that brute-forcing it would take supercomputers billions of years. (e.g., AES-256 has 2<sup>256</sup> possible keys).
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function runBruteForce() {
+        const text = document.getElementById('input-text').value;
+        if(!text) return alert("Enter some ciphertext!");
+        
+        document.getElementById('results-area').style.display = 'block';
+        const list = document.getElementById('results-list');
+        list.innerHTML = 'Running...';
+        
+        try {
+            const res = await fetch('/api/attacks/bruteforce', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ciphertext: text })
+            });
+            const data = await res.json();
+            
+            if(data.error) {
+                list.innerHTML = `<span style="color:var(--error);">${data.error}</span>`;
+                return;
+            }
+            
+            let html = '';
+            data.results.forEach((r, idx) => {
+                const isBestMatch = idx === 0 && r.score > 0;
+                const style = isBestMatch ? 'background: rgba(16, 185, 129, 0.2); border-left: 3px solid var(--secondary);' : 'border-left: 3px solid transparent; opacity: 0.8;';
+                const tag = isBestMatch ? `<span style="float:right; color:var(--secondary); font-size:0.75rem; font-weight:bold;">← Likely Match!</span>` : '';
+                
+                html += `
+                    <div style="padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; ${style}">
+                        <span style="color: var(--text-muted); margin-right: 1rem;">Shift ${r.shift.toString().padStart(2, '0')}</span>
+                        <span>${r.plaintext}</span>
+                        ${tag}
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+            
+        } catch (e) {
+            list.innerHTML = `<span style="color:var(--error);">Attack failed to run.</span>`;
+        }
+    }
+</script>
+{% endblock %}

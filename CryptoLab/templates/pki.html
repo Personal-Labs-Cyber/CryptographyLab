@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-certificate"></i> PKI & Digital Certificates</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Understand Public Key Infrastructure (PKI) by inspecting real X.509 Digital Certificates.
+    </p>
+</div>
+
+<div class="encryption-layout">
+    
+    <!-- LEFT PANEL: Fetcher -->
+    <div class="workspace-panel glass-panel">
+        <h3>Certificate Inspector</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            A Digital Certificate binds a Public Key to an identity (like a website), verified by a trusted Certificate Authority (CA).
+        </p>
+
+        <div class="form-group">
+            <label>Domain Name</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="domain-input" placeholder="e.g. google.com" value="google.com" style="flex: 1;">
+                <button class="btn btn-primary" onclick="fetchCert()">Inspect</button>
+            </div>
+        </div>
+
+        <div id="cert-results" style="display: none; margin-top: 2rem;">
+            
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--secondary); border-radius: 8px; padding: 1.5rem; position: relative;">
+                <div style="position: absolute; top: 1rem; right: 1rem; color: var(--secondary); font-size: 2rem;">
+                    <i class="fas fa-shield-check"></i>
+                </div>
+                
+                <h4 style="color: var(--secondary); margin-bottom: 1rem;">Certificate Details</h4>
+                
+                <div class="info-grid" style="grid-template-columns: 140px 1fr;">
+                    <div class="info-label">Subject (Owner):</div><div class="info-value" id="cert-subject" style="font-weight: bold;"></div>
+                    <div class="info-label">Issuer (CA):</div><div class="info-value" id="cert-issuer"></div>
+                    <div class="info-label">Valid From:</div><div class="info-value" id="cert-start"></div>
+                    <div class="info-label">Valid Until:</div><div class="info-value" id="cert-end"></div>
+                    <div class="info-label">Public Key:</div><div class="info-value" id="cert-pubkey" style="color: var(--primary);"></div>
+                    <div class="info-label">Signature Alg:</div><div class="info-value" id="cert-sigalg"></div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <div class="info-label" style="margin-bottom: 0.25rem;">Fingerprint:</div>
+                    <div class="info-value" id="cert-fingerprint" style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; word-break: break-all; color: var(--text-muted);"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="cert-error" style="display: none; margin-top: 2rem; color: var(--error); padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Explanation -->
+    <div class="info-panel glass-panel">
+        <h3>How TLS/HTTPS Works</h3>
+        
+        <div style="margin-top: 1.5rem;">
+            <strong style="color: var(--primary);">1. The Handshake</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 1rem;">
+                When you visit google.com, the server sends its Digital Certificate to your browser.
+            </p>
+            
+            <strong style="color: var(--primary);">2. Verification</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 1rem;">
+                Your browser checks the certificate's Digital Signature against its built-in list of trusted Root Certificate Authorities (like DigiCert or Let's Encrypt). If the signature is valid, you know the Public Key actually belongs to Google.
+            </p>
+            
+            <strong style="color: var(--primary);">3. Key Exchange</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; margin-bottom: 1rem;">
+                Your browser and Google use this verified Public Key to securely agree on a Symmetric Key (using algorithms like Diffie-Hellman / ECDH).
+            </p>
+            
+            <strong style="color: var(--primary);">4. Secure Channel</strong>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+                All further communication is encrypted with a fast symmetric cipher (like AES-GCM) using that shared key!
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function fetchCert() {
+        const domain = document.getElementById('domain-input').value;
+        if(!domain) return;
+        
+        document.getElementById('cert-results').style.display = 'none';
+        document.getElementById('cert-error').style.display = 'none';
+        
+        try {
+            const res = await fetch('/api/advanced/pki/fetch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain: domain })
+            });
+            const data = await res.json();
+            
+            if(data.error) {
+                document.getElementById('cert-error').innerText = "Error: " + data.error;
+                document.getElementById('cert-error').style.display = 'block';
+                return;
+            }
+            
+            // Format Subject
+            let subjectStr = '';
+            if (data.subject.commonName) subjectStr += data.subject.commonName;
+            if (data.subject.organizationName) subjectStr += ` (${data.subject.organizationName})`;
+            document.getElementById('cert-subject').innerText = subjectStr || "Unknown";
+            
+            // Format Issuer
+            let issuerStr = '';
+            if (data.issuer.organizationName) issuerStr += data.issuer.organizationName;
+            if (data.issuer.commonName) issuerStr += ` - ${data.issuer.commonName}`;
+            document.getElementById('cert-issuer').innerText = issuerStr || "Unknown";
+            
+            document.getElementById('cert-start').innerText = new Date(data.not_valid_before).toLocaleDateString();
+            document.getElementById('cert-end').innerText = new Date(data.not_valid_after).toLocaleDateString();
+            document.getElementById('cert-pubkey').innerText = data.public_key;
+            document.getElementById('cert-sigalg').innerText = data.signature_algorithm;
+            document.getElementById('cert-fingerprint').innerText = data.fingerprint;
+            
+            document.getElementById('cert-results').style.display = 'block';
+            
+        } catch (e) {
+            document.getElementById('cert-error').innerText = "Failed to fetch certificate";
+            document.getElementById('cert-error').style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

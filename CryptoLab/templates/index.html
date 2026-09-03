@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-content">
+        <h2>Cryptography Learning & Analysis Toolkit</h2>
+        <p>Explore algorithms, understand attacks, and learn how to build secure systems.</p>
+    </div>
+</div>
+
+<div class="modules-grid">
+    <div class="module-card" style="border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.05);">
+        <div class="module-icon">🎓</div>
+        <h3>Interactive Study Mode</h3>
+        <p>Visual flowcharts and step-by-step simulations explaining how each algorithm works mathematically.</p>
+        <a href="{{ url_for('study_view') }}" class="btn" style="background: var(--accent); color: white;">Start Studying</a>
+    </div>
+
+    <div class="module-card">
+        <div class="module-icon">🔒</div>
+        <h3>Encryption</h3>
+        <p>Explore Caesar, Vigenère, AES, and RSA in a unified workspace.</p>
+        <a href="{{ url_for('encryption_view') }}" class="btn">Start Learning</a>
+    </div>
+    
+    <div class="module-card">
+        <div class="module-icon">#️⃣</div>
+        <h3>Hashing</h3>
+        <p>Compare MD5, SHA-256, PBKDF2, and bcrypt.</p>
+        <a href="{{ url_for('hashing_view') }}" class="btn">Start Learning</a>
+    </div>
+
+    <div class="module-card" style="border-color: rgba(239, 68, 68, 0.3);">
+        <div class="module-icon">⚔️</div>
+        <h3>Attack Lab</h3>
+        <p>Understand cryptanalysis by writing tools to break weak ciphers.</p>
+        <a href="{{ url_for('attacks_view') }}" class="btn">Enter Lab</a>
+    </div>
+
+    <div class="module-card">
+        <div class="module-icon">📊</div>
+        <h3>Algorithm Comparison</h3>
+        <p>Compare speeds, key sizes, and security ratings of all algorithms.</p>
+        <a href="{{ url_for('comparison_view') }}" class="btn">View Comparison</a>
+    </div>
+</div>
+{% endblock %}

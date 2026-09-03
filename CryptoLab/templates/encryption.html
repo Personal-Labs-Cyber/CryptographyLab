@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-lock"></i> Unified Encryption Workspace</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Select an algorithm to encrypt/decrypt data and explore its cryptographic properties.
+    </p>
+</div>
+
+<div class="encryption-layout">
+    
+    <!-- LEFT PANEL: Workspace -->
+    <div class="workspace-panel glass-panel">
+        
+        <div class="form-group">
+            <label for="algo-select">Algorithm</label>
+            <select id="algo-select" class="custom-select" onchange="switchAlgorithm()">
+                <optgroup label="Classical Ciphers">
+                    <option value="caesar">Caesar Cipher</option>
+                    <option value="atbash">Atbash Cipher</option>
+                    <option value="vigenere">Vigenère Cipher</option>
+                    <option value="playfair">Playfair Cipher</option>
+                    <option value="affine">Affine Cipher</option>
+                    <option value="rail_fence">Rail Fence Cipher</option>
+                </optgroup>
+                <optgroup label="Modern Encryption">
+                    <option value="aes">AES-256-CBC (Symmetric)</option>
+                    <option value="rsa">RSA-2048 (Asymmetric)</option>
+                </optgroup>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Operation</label>
+            <div class="radio-group">
+                <label><input type="radio" name="operation" value="encrypt" checked> Encrypt</label>
+                <label style="margin-left: 1rem;"><input type="radio" name="operation" value="decrypt"> Decrypt</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="input-text">Input Data</label>
+            <textarea id="input-text" rows="3" placeholder="Enter your secret message here..."></textarea>
+        </div>
+
+        <!-- Dynamic Key Section -->
+        <div id="key-section" class="form-group">
+            <!-- Injected by JS -->
+        </div>
+
+        <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="processData()">
+            <i class="fas fa-play"></i> Execute
+        </button>
+
+        <div class="form-group" style="margin-top: 2rem;">
+            <label for="output-text">Result</label>
+            <textarea id="output-text" rows="3" readonly></textarea>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Algorithm Info & Study Mode -->
+    <div class="info-panel glass-panel">
+        <h3 id="info-title" style="margin-bottom: 1rem; color: var(--primary);">Loading...</h3>
+        
+        <div class="info-grid">
+            <div class="info-label">Type:</div><div class="info-value" id="info-type">...</div>
+            <div class="info-label">Key Size:</div><div class="info-value" id="info-keysize">...</div>
+            <div class="info-label">Security:</div><div class="info-value" id="info-security">...</div>
+        </div>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Advantages</h4>
+        <ul id="info-adv" class="styled-list"></ul>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: var(--error);">Important</h4>
+        <ul id="info-warn" class="styled-list warning-list"></ul>
+
+        <!-- Study Mode Animation Area -->
+        <div class="study-mode-container" style="margin-top: 2rem;">
+            <h4 style="margin-bottom: 1rem;"><i class="fas fa-graduation-cap"></i> Study Mode (How it works)</h4>
+            <div id="animation-area" class="animation-box">
+                <!-- CSS Animations injected here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ALGO_DATA = {
+        caesar: {
+            title: "Caesar Cipher", type: "Classical Substitution", keysize: "Shift (1-25)", secClass: "sec-weak", security: "Weak",
+            adv: ["Easy to understand", "Fast manual computation"],
+            warn: ["Only 25 possible keys", "Easily broken via brute force or frequency analysis"],
+            keyHtml: `<label>Shift Key (Integer)</label><input type="number" id="key-input" placeholder="e.g. 3" min="1" max="25">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Caesar Cipher kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input<br><b>"HELLO"</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box">🔑 Key = 3<br><small>Har letter ko 3 position aage shift karo</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>"KHOOR"</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Step 1:</span> H (index 7) + 3 = K (index 10)</div>
+                        <div class="step-row"><span class="step-label">Step 2:</span> E (index 4) + 3 = H (index 7)</div>
+                        <div class="step-row"><span class="step-label">Step 3:</span> L (index 11) + 3 = O (index 14)</div>
+                        <div class="step-row"><span class="step-label">Step 4:</span> L (index 11) + 3 = O (index 14)</div>
+                        <div class="step-row"><span class="step-label">Step 5:</span> O (index 14) + 3 = R (index 17)</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Python Code (Hinglish mein samjho):
+def encrypt(text, key):
+    result = ""
+    for char in text:          # Har ek letter ko uthao
+        index = ord(char) - 65 # Letter ka number nikalo (A=0, B=1...)
+        new_index = (index + key) % 26  # Key add karo, 26 se mod lo
+        result += chr(new_index + 65)   # Naya letter banao
+    return result  # Encrypted text return karo</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        atbash: {
+            title: "Atbash Cipher", type: "Classical Substitution", keysize: "None", secClass: "sec-weak", security: "Weak",
+            adv: ["No key required", "Simple to memorize"],
+            warn: ["Zero keyspace (always the same transformation)", "Instantly broken"],
+            keyHtml: `<p style="font-size: 0.85rem; color: var(--text-muted);">Atbash does not require a key. It reverses the alphabet.</p><input type="hidden" id="key-input" value="0">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Atbash Cipher kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input<br><b>"HELLO"</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box">🔄 Reverse Alphabet<br><small>A↔Z, B↔Y, C↔X ...</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>"SVOOL"</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Step 1:</span> H → S (H ulta = S)</div>
+                        <div class="step-row"><span class="step-label">Step 2:</span> E → V (E ulta = V)</div>
+                        <div class="step-row"><span class="step-label">Step 3:</span> L → O (L ulta = O)</div>
+                        <div class="step-row"><span class="step-label">Step 4:</span> L → O</div>
+                        <div class="step-row"><span class="step-label">Step 5:</span> O → L (O ulta = L)</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Koi key nahi chahiye — sirf alphabet ulta karo!
+def encrypt(text):
+    result = ""
+    for char in text:          # Har letter uthao
+        index = ord(char) - 65 # Letter ka number nikalo
+        new_index = 25 - index # 25 se minus karo (A=25→Z, B=24→Y)
+        result += chr(new_index + 65)  # Naya letter banao
+    return result</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        vigenere: {
+            title: "Vigenère Cipher", type: "Polyalphabetic Substitution", keysize: "Variable String", secClass: "sec-weak", security: "Weak (Historically Strong)",
+            adv: ["Masks letter frequencies", "Requires no complex math"],
+            warn: ["Vulnerable to Kasiski examination", "Key repetition reveals patterns"],
+            keyHtml: `<label>Keyword</label><input type="text" id="key-input" placeholder="e.g. SECRET">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Vigenère Cipher kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input<br><b>"HI"</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box">🔑 Key = "KEY"<br><small>Har letter ke liye alag shift (K=10, E=4)</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>"RM"</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Step 1:</span> H (7) + K (10) = R (17)</div>
+                        <div class="step-row"><span class="step-label">Step 2:</span> I (8) + E (4) = M (12)</div>
+                        <div class="step-row"><span class="step-label">Note:</span> Key repeat hota hai agar text bada ho</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Multiple Caesar ciphers ek saath — har letter ka shift alag!
+def encrypt(text, keyword):
+    result = ""
+    for i, char in enumerate(text):  # Har letter + uska position
+        key_char = keyword[i % len(keyword)]  # Key repeat hota hai
+        shift = ord(key_char) - 65   # Key letter ka shift value
+        new = (ord(char) - 65 + shift) % 26  # Shift lagao
+        result += chr(new + 65)
+    return result</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        playfair: {
+            title: "Playfair Cipher", type: "Polygraphic Substitution", keysize: "Variable String", secClass: "sec-weak", security: "Weak",
+            adv: ["Encrypts digraphs (pairs of letters)", "Flattened frequency distribution"],
+            warn: ["Vulnerable to frequency analysis of digraphs"],
+            keyHtml: `<label>Keyword</label><input type="text" id="key-input" placeholder="e.g. MONARCHY">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Playfair Cipher kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input<br><b>"HE"</b> (pair)</div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box">📊 5×5 Grid<br><small>Keyword se grid banao, pair ke rules follow karo</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>"DM"</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Step 1:</span> Keyword "MONARCHY" se 5×5 grid banao (I/J merge)</div>
+                        <div class="step-row"><span class="step-label">Step 2:</span> Text ko 2-2 ke pairs mein todo: HE, LX, LO</div>
+                        <div class="step-row"><span class="step-label">Step 3:</span> Pair ke dono letters grid mein dhundho</div>
+                        <div class="step-row"><span class="step-label">Rule:</span> Same row → right shift | Same col → down shift | Rectangle → swap columns</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Grid based cipher — 2 letters ek saath encrypt hote hain!
+# Step 1: Keyword se 5x5 grid banao
+# Step 2: Plaintext ko pairs mein todo
+# Step 3: Rules apply karo:
+#   - Same row: dono ko right shift karo
+#   - Same column: dono ko neeche shift karo
+#   - Rectangle: columns swap karo</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        affine: {
+            title: "Affine Cipher", type: "Mathematical Substitution", keysize: "Tuple (a, b)", secClass: "sec-weak", security: "Weak",
+            adv: ["Introduces mathematical modular arithmetic"],
+            warn: ["'a' must be coprime to 26", "Easily broken via known-plaintext attack"],
+            keyHtml: `<label>Keys (a, b) formatted as a,b</label><input type="text" id="key-input" placeholder="e.g. 5,8">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Affine Cipher kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input 'H'<br><b>x = 7</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="font-family:monospace;">E(x) = (5×7 + 8) mod 26<br>= 43 mod 26 = <b>17</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>'R'</b> (index 17)</div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Formula:</span> E(x) = (a*x + b) mod 26</div>
+                        <div class="step-row"><span class="step-label">Decrypt:</span> D(x) = a⁻¹ * (x - b) mod 26</div>
+                        <div class="step-row"><span class="step-label">Rule:</span> 'a' ka gcd(a, 26) = 1 hona chahiye (coprime)</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Math-based cipher — multiply + add + modulo!
+def encrypt(text, a, b):
+    result = ""
+    for char in text:
+        x = ord(char) - 65       # Letter ka number
+        enc = (a * x + b) % 26   # Formula: (a*x + b) mod 26
+        result += chr(enc + 65)   # Number se letter wapas banao
+    return result</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        rail_fence: {
+            title: "Rail Fence Cipher", type: "Transposition Cipher", keysize: "Integer (Rails)", secClass: "sec-weak", security: "Weak",
+            adv: ["Scrambles positions rather than substituting letters"],
+            warn: ["Extremely small keyspace", "Visual patterns leak structure"],
+            keyHtml: `<label>Number of Rails (Integer)</label><input type="number" id="key-input" placeholder="e.g. 3">`,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 Rail Fence kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Input<br><b>"HELLO WORLD"</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box">🚂 3 Rails<br><small>Zigzag pattern mein likho, phir rows padho</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Output<br><b>"HOREL..."</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Rail 1:</span> H . . . O . . . R . .</div>
+                        <div class="step-row"><span class="step-label">Rail 2:</span> . E . L . _ . O . L . </div>
+                        <div class="step-row"><span class="step-label">Rail 3:</span> . . L . . . W . . . D</div>
+                        <div class="step-row"><span class="step-label">Read:</span> Row 1 + Row 2 + Row 3 = Ciphertext</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Letters ko zigzag pattern mein likhte hain!
+# Rail 1: H . . . O . . . R
+# Rail 2: . E . L . _ . O . L
+# Rail 3: . . L . . . W . . . D
+# Phir har rail ko left-to-right padho → Ciphertext</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        aes: {
+            title: "Advanced Encryption Standard (AES)", type: "Modern Symmetric Block Cipher", keysize: "128 / 192 / 256 bit", secClass: "sec-strong", security: "Very Strong",
+            adv: ["Fast and hardware optimized", "Widely adopted global standard", "Suitable for large data"],
+            warn: ["Must use secure mode (like CBC or GCM)", "Never reuse a nonce/IV with the same key"],
+            keyHtml: `
+                <label>256-bit Key (Hex) <button class="btn btn-sm btn-secondary" style="padding:0.2rem 0.5rem; float:right; font-size:0.7rem;" onclick="generateAESKey()">Generate</button></label>
+                <input type="text" id="key-input" placeholder="64 hex chars...">
+                <label style="margin-top:0.5rem;">IV (Hex)</label>
+                <input type="text" id="iv-input" placeholder="32 hex chars...">
+            `,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 AES Encryption kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 16-Byte Block<br><small>Plaintext</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="border-color:#f59e0b;">SubBytes<br><small>Non-linear substitution (S-Box)</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="border-color:#8b5cf6;">ShiftRows<br><small>Rows shift karo</small></div>
+                    </div>
+                    <div class="flow-row" style="margin-top:1rem;">
+                        <div class="flow-box process-box" style="border-color:#ec4899;">MixColumns<br><small>Columns mix karo (math)</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="border-color:#06b6d4;">AddRoundKey<br><small>Key ke saath XOR karo</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Ciphertext<br><small>10/12/14 rounds baad</small></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Round 1-N:</span> SubBytes → ShiftRows → MixColumns → AddRoundKey</div>
+                        <div class="step-row"><span class="step-label">Last Round:</span> SubBytes → ShiftRows → AddRoundKey (No MixColumns)</div>
+                        <div class="step-row"><span class="step-label">Key Size:</span> 128-bit → 10 rounds | 256-bit → 14 rounds</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># Python (cryptography library use karte hain):
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+key = os.urandom(32)  # 256-bit random key
+iv = os.urandom(16)   # 128-bit IV (Initialization Vector)
+cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+encryptor = cipher.encryptor()
+ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+# Key + IV se encrypt hota hai, wahi key + IV se decrypt hoga</code></pre>
+                    </div>
+                </div>
+            `
+        },
+        rsa: {
+            title: "RSA-2048", type: "Modern Asymmetric", keysize: "2048+ bit", secClass: "sec-strong", security: "Very Strong",
+            adv: ["Solves key distribution problem", "Supports digital signatures"],
+            warn: ["Very slow compared to AES", "Only encrypt small data (keys/hashes)"],
+            keyHtml: `
+                <label>Keypair (PEM) <button class="btn btn-sm btn-secondary" style="padding:0.2rem 0.5rem; float:right; font-size:0.7rem;" onclick="generateRSAKey()">Generate</button></label>
+                <textarea id="key-input" rows="4" placeholder="Paste Public Key for Encryption, or Private Key for Decryption..."></textarea>
+            `,
+            anim: `
+                <div class="flow-visual">
+                    <h5 style="color:var(--accent); margin-bottom:1rem;">📌 RSA Encryption kaise kaam karta hai:</h5>
+                    <div class="flow-row">
+                        <div class="flow-box input-box">📥 Message (m)<br><b>"Hi"</b></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="border-color:var(--secondary);">🔒 Public Key (e, n)<br><small>c = m<sup>e</sup> mod n</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Ciphertext (c)<br><small>Network pe bhejo</small></div>
+                    </div>
+                    <div class="flow-row" style="margin-top:1rem;">
+                        <div class="flow-box input-box">📥 Ciphertext (c)</div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box process-box" style="border-color:var(--error);">🔑 Private Key (d, n)<br><small>m = c<sup>d</sup> mod n</small></div>
+                        <div class="flow-arrow-h">→</div>
+                        <div class="flow-box output-box">📤 Original Message<br><b>"Hi"</b></div>
+                    </div>
+                    <div class="flow-detail">
+                        <div class="step-row"><span class="step-label">Key Gen:</span> Do bade prime numbers (p, q) lo → n = p × q</div>
+                        <div class="step-row"><span class="step-label">Public:</span> (e, n) — sabko de do</div>
+                        <div class="step-row"><span class="step-label">Private:</span> (d, n) — sirf apne paas rakho</div>
+                        <div class="step-row"><span class="step-label">Security:</span> n ko factorize karna mushkil hai — isliye safe hai!</div>
+                    </div>
+                    <div class="code-explain">
+                        <pre><code># 2 keys hoti hain — Public (share karo) + Private (secret)
+from cryptography.hazmat.primitives.asymmetric import rsa
+# Key Generate:
+private_key = rsa.generate_private_key(
+    public_exponent=65537, key_size=2048)
+public_key = private_key.public_key()
+# Encrypt: public_key.encrypt(message)
+# Decrypt: private_key.decrypt(ciphertext)</code></pre>
+                    </div>
+                </div>
+            `
+        }
+    };
+
+    function switchAlgorithm() {
+        const algo = document.getElementById('algo-select').value;
+        const data = ALGO_DATA[algo];
+        
+        // Update Workspace Inputs
+        document.getElementById('key-section').innerHTML = data.keyHtml;
+        document.getElementById('output-text').value = '';
+        
+        // Update Info Panel
+        document.getElementById('info-title').innerText = data.title;
+        document.getElementById('info-type').innerText = data.type;
+        document.getElementById('info-keysize').innerText = data.keysize;
+        
+        const secEl = document.getElementById('info-security');
+        secEl.innerText = data.security;
+        secEl.className = 'info-value ' + data.secClass;
+        
+        document.getElementById('info-adv').innerHTML = data.adv.map(i => `<li><i class="fas fa-check" style="color:var(--secondary);margin-right:0.5rem;"></i>${i}</li>`).join('');
+        document.getElementById('info-warn').innerHTML = data.warn.map(i => `<li><i class="fas fa-exclamation-triangle"></i>${i}</li>`).join('');
+        
+        document.getElementById('animation-area').innerHTML = data.anim;
+    }
+
+    async function generateAESKey() {
+        const res = await fetch('/api/symmetric/aes/keygen');
+        const data = await res.json();
+        document.getElementById('key-input').value = data.key;
+        document.getElementById('iv-input').value = data.iv;
+    }
+
+    async function generateRSAKey() {
+        const res = await fetch('/api/asymmetric/rsa/keygen');
+        const data = await res.json();
+        const isEncrypt = document.querySelector('input[name="operation"]:checked').value === 'encrypt';
+        document.getElementById('key-input').value = isEncrypt ? data.public_key : data.private_key;
+        alert("Keys generated! In reality, you'd save the private key. For this demo, it pasted the required key for your operation.");
+    }
+
+    async function processData() {
+        const algo = document.getElementById('algo-select').value;
+        const action = document.querySelector('input[name="operation"]:checked').value;
+        const text = document.getElementById('input-text').value;
+        const key = document.getElementById('key-input').value;
+        
+        if(!text || !key) return alert("Please enter text and key.");
+        
+        document.getElementById('output-text').value = 'Processing...';
+
+        try {
+            let url = '/api/process';
+            let payload = { action, text, key, cipher_id: algo };
+            
+            if (algo === 'aes') {
+                url = '/api/symmetric/aes/process';
+                payload = { action, text, key, iv: document.getElementById('iv-input').value, mode: 'CBC' };
+            } else if (algo === 'rsa') {
+                url = '/api/asymmetric/rsa/process';
+            }
+            
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if(data.error) alert(data.error);
+            else document.getElementById('output-text').value = data.result || data.ciphertext || data.plaintext;
+        } catch (e) {
+            alert('Request failed');
+        }
+    }
+
+    // Init
+    const urlParams = new URLSearchParams(window.location.search);
+    const algoParam = urlParams.get('algo');
+    if (algoParam && ALGO_DATA[algoParam]) {
+        document.getElementById('algo-select').value = algoParam;
+    }
+    switchAlgorithm();
+</script>
+{% endblock %}

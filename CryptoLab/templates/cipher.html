@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="cipher-container">
+    <div class="header">
+        <h2>{{ cipher_info.name }}</h2>
+    </div>
+
+    <div class="cipher-workspace">
+        <div class="input-section glass-panel">
+            <h3>Input</h3>
+            <div class="form-group">
+                <label for="text-input">Text</label>
+                <textarea id="text-input" rows="4" placeholder="Enter text here..."></textarea>
+            </div>
+            
+            {% if cipher_info.has_key %}
+            <div class="form-group">
+                <label for="key-input">Key ({{ cipher_info.key_type }})</label>
+                <input type="text" id="key-input" placeholder="e.g. {% if cipher_info.key_type == 'int' %}3{% elif cipher_info.key_type == 'tuple' %}5, 8{% else %}SECRET{% endif %}">
+            </div>
+            {% endif %}
+
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="processCipher('encrypt')"><i class="fas fa-lock"></i> Encrypt</button>
+                <button class="btn btn-secondary" onclick="processCipher('decrypt')"><i class="fas fa-unlock"></i> Decrypt</button>
+            </div>
+        </div>
+
+        <div class="output-section glass-panel">
+            <h3>Result</h3>
+            <div class="form-group">
+                <textarea id="text-output" rows="4" readonly placeholder="Result will appear here..."></textarea>
+            </div>
+            <div id="error-message" class="error-msg" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function processCipher(action) {
+        const text = document.getElementById('text-input').value;
+        const keyInput = document.getElementById('key-input');
+        const key = keyInput ? keyInput.value : null;
+        
+        const outputEl = document.getElementById('text-output');
+        const errorEl = document.getElementById('error-message');
+        
+        outputEl.value = '';
+        errorEl.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cipher_id: '{{ cipher_id }}',
+                    action: action,
+                    text: text,
+                    key: key
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                errorEl.textContent = data.error || 'An error occurred';
+                errorEl.style.display = 'block';
+            } else {
+                outputEl.value = data.result;
+            }
+        } catch (err) {
+            errorEl.textContent = 'Failed to connect to the server.';
+            errorEl.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

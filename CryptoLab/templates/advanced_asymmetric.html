@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h2><i class="fas fa-project-diagram"></i> Advanced Asymmetric Cryptography</h2>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">
+        Explore Diffie-Hellman Key Exchange and Digital Signatures.
+    </p>
+</div>
+
+<!-- Diffie-Hellman Lab -->
+<div class="glass-panel" style="margin-top: 2rem; border-top: 4px solid var(--accent);">
+    <h3>Diffie-Hellman Key Exchange</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+        How can Alice and Bob agree on a secret key over a public, insecure channel where anyone is listening? Diffie-Hellman solves this using modular arithmetic.
+    </p>
+
+    <div style="display: flex; gap: 2rem; margin-top: 1rem;">
+        
+        <!-- Alice -->
+        <div style="flex: 1; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem; border: 1px solid var(--border);">
+            <h4>Alice</h4>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Public Value (Sent to Bob)</label>
+                <input type="text" id="dh-alice-pub" readonly style="color: var(--primary);">
+            </div>
+            <div class="form-group">
+                <label>Computed Shared Secret</label>
+                <input type="text" id="dh-alice-secret" readonly style="color: var(--secondary); font-weight: bold;">
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <button class="btn btn-primary" onclick="runDHExchange()">Execute Key Exchange</button>
+            <i class="fas fa-exchange-alt" style="margin-top: 1rem; font-size: 1.5rem; color: var(--text-muted);"></i>
+        </div>
+
+        <!-- Bob -->
+        <div style="flex: 1; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 0.5rem; border: 1px solid var(--border);">
+            <h4>Bob</h4>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Public Value (Sent to Alice)</label>
+                <input type="text" id="dh-bob-pub" readonly style="color: var(--primary);">
+            </div>
+            <div class="form-group">
+                <label>Computed Shared Secret</label>
+                <input type="text" id="dh-bob-secret" readonly style="color: var(--secondary); font-weight: bold;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Digital Signatures Lab -->
+<div class="glass-panel" style="margin-top: 2rem; border-top: 4px solid var(--primary);">
+    <h3>Digital Signatures (RSA)</h3>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+        Digital Signatures prove that a message came from the owner of the private key, and that the message was not altered in transit (Non-repudiation and Integrity).
+    </p>
+
+    <button class="btn btn-secondary btn-sm" onclick="generateRSAKeys()">Generate RSA Keys for Signing</button>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <textarea id="sig-priv-key" rows="2" placeholder="Private Key (Used for Signing)" style="flex: 1; font-size: 0.7rem;"></textarea>
+        <textarea id="sig-pub-key" rows="2" placeholder="Public Key (Used for Verifying)" style="flex: 1; font-size: 0.7rem;"></textarea>
+    </div>
+
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <label>Document / Message</label>
+        <textarea id="sig-message" rows="2">Transfer $1000 to Bob's account.</textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="signMessage()">Sign Document with Private Key</button>
+
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <label>Cryptographic Signature (Base64)</label>
+        <textarea id="sig-output" rows="2" style="font-size: 0.7rem; color: var(--accent);"></textarea>
+    </div>
+
+    <hr style="border: 0; border-top: 1px dashed var(--border); margin: 2rem 0;">
+
+    <h4>Verification</h4>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Try verifying the signature. Then, try altering the document slightly (e.g., change $1000 to $9000) and verify again to see it fail!
+    </p>
+    <button class="btn btn-secondary" onclick="verifySignature()">Verify Signature with Public Key</button>
+    
+    <div id="verify-result" style="margin-top: 1rem; font-weight: bold; font-size: 1.2rem; padding: 1rem; border-radius: 4px; display: none;">
+    </div>
+
+</div>
+
+<script>
+    async function runDHExchange() {
+        try {
+            const res = await fetch('/api/advanced/asymmetric/dh');
+            const data = await res.json();
+            
+            document.getElementById('dh-alice-pub').value = data.alice_pub;
+            document.getElementById('dh-bob-pub').value = data.bob_pub;
+            
+            document.getElementById('dh-alice-secret').value = data.alice_secret;
+            document.getElementById('dh-bob-secret').value = data.bob_secret;
+        } catch (e) {
+            alert('Failed to run DH exchange');
+        }
+    }
+
+    async function generateRSAKeys() {
+        try {
+            const res = await fetch('/api/asymmetric/rsa/keygen');
+            const data = await res.json();
+            document.getElementById('sig-priv-key').value = data.private_key;
+            document.getElementById('sig-pub-key').value = data.public_key;
+        } catch (e) {
+            alert('Failed to generate keypair');
+        }
+    }
+
+    async function signMessage() {
+        const msg = document.getElementById('sig-message').value;
+        const priv = document.getElementById('sig-priv-key').value;
+        if(!msg || !priv) return alert("Generate keys and enter a message first!");
+
+        try {
+            const res = await fetch('/api/advanced/asymmetric/sign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, private_key: priv })
+            });
+            const data = await res.json();
+            if(data.error) alert(data.error);
+            else document.getElementById('sig-output').value = data.signature;
+        } catch (e) {
+            alert('Failed to sign');
+        }
+    }
+
+    async function verifySignature() {
+        const msg = document.getElementById('sig-message').value;
+        const pub = document.getElementById('sig-pub-key').value;
+        const sig = document.getElementById('sig-output').value;
+        if(!msg || !pub || !sig) return alert("Missing document, public key, or signature!");
+
+        try {
+            const res = await fetch('/api/advanced/asymmetric/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, public_key: pub, signature: sig })
+            });
+            const data = await res.json();
+            
+            const resDiv = document.getElementById('verify-result');
+            resDiv.style.display = 'block';
+            if(data.valid) {
+                resDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                resDiv.style.color = '#6ee7b7';
+                resDiv.innerHTML = '<i class="fas fa-check-circle"></i> Signature is VALID. Document is authentic!';
+            } else {
+                resDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                resDiv.style.color = '#fca5a5';
+                resDiv.innerHTML = '<i class="fas fa-times-circle"></i> Signature is INVALID. Document was tampered with or key is wrong!';
+            }
+        } catch (e) {
+            alert('Failed to verify');
+        }
+    }
+</script>
+{% endblock %}
